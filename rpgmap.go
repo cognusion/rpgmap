@@ -14,14 +14,20 @@ import (
 
 type point [2]float64
 type marker struct {
-	X    float64
-	Y    float64
-	Text string
-	Tags []string
+	Point point
+	Text  string
+	Tags  []string
 }
 
 type polymarker struct {
 	Points []point
+	Text   string
+	Tags   []string
+}
+
+type circlemarker struct {
+	Point  point
+	Radius float64
 	Text   string
 	Tags   []string
 }
@@ -33,10 +39,24 @@ func newMarker(line string) (*marker, error) {
 	if len(parts) < 4 {
 		return nil, fmt.Errorf("number of parts must be at least 4")
 	}
-	m.X = cast.ToFloat64(strings.TrimSpace(parts[0]))
-	m.Y = cast.ToFloat64(strings.TrimSpace(parts[1]))
+	m.Point = point{cast.ToFloat64(strings.TrimSpace(parts[0])), cast.ToFloat64(strings.TrimSpace(parts[1]))}
 	m.Text = strings.TrimSpace(parts[2])
 	m.Tags = append(m.Tags, parts[3:]...)
+
+	return &m, nil
+}
+
+func newCirclemarker(line string) (*circlemarker, error) {
+	m := circlemarker{}
+
+	parts := strings.Split(line, ",")
+	if len(parts) < 6 {
+		return nil, fmt.Errorf("number of parts must be at least 6")
+	}
+	m.Point = point{cast.ToFloat64(strings.TrimSpace(parts[1])), cast.ToFloat64(strings.TrimSpace(parts[2]))}
+	m.Radius = cast.ToFloat64(parts[3])
+	m.Text = strings.TrimSpace(parts[4])
+	m.Tags = append(m.Tags, parts[5:]...)
 
 	return &m, nil
 }
@@ -104,8 +124,21 @@ func main() {
 			continue
 		}
 
-		if strings.HasPrefix(line, "p") {
-			// Polygone
+		if strings.HasPrefix(line, "c") {
+			// circle
+			m, err := newCirclemarker(line)
+			if err != nil {
+				panic(err)
+			}
+
+			mLine := fmt.Sprintf("L.circle([%f,%f],{ radius: %f, color: 'red', fillColor: '#f03', fillOpacity: 0.2}).bindPopup(\"%s\")", m.Point[0], m.Point[1], m.Radius, m.Text)
+			for _, t := range m.Tags {
+				t = strings.TrimSpace(t)
+				tags[t] = append(tags[t], mLine)
+			}
+
+		} else if strings.HasPrefix(line, "p") {
+			// Polygon
 			m, err := newPolymarker(line)
 			if err != nil {
 				panic(err)
@@ -132,7 +165,7 @@ func main() {
 				panic(err)
 			}
 
-			mLine := fmt.Sprintf("L.marker([%f,%f]).bindPopup(\"%s\")", m.X, m.Y, m.Text)
+			mLine := fmt.Sprintf("L.marker([%f,%f]).bindPopup(\"%s\")", m.Point[0], m.Point[1], m.Text)
 			for _, t := range m.Tags {
 				t = strings.TrimSpace(t)
 				tags[t] = append(tags[t], mLine)
