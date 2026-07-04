@@ -137,7 +137,7 @@ func (m CircleMarker) String() string {
 	if !m.Options.IsEmpty() {
 		fmt.Fprintf(&mLine, ",%s", m.Options.String())
 	}
-	fmt.Fprintf(&mLine, ".bindPopup(\"%s\")", m.Text)
+	fmt.Fprintf(&mLine, ").bindPopup(\"%s\")", m.Text)
 	return mLine.String()
 }
 
