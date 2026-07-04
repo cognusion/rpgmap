@@ -53,53 +53,32 @@ func main() {
 		}
 
 		// Process it!
+		var (
+			m   TagStringer
+			err error
+		)
+
+		// Build based on the line type
 		if strings.HasPrefix(line, "c") {
 			// circle
-			m, err := NewCircleMarker(line)
-			if err != nil {
-				panic(err)
-			}
-
-			mLine := fmt.Sprintf("L.circle(%s,{ radius: %f, color: 'red', fillColor: '#f03', fillOpacity: 0.2}).bindPopup(\"%s\")", m.Point.String(), m.Radius, m.Text)
-			for _, t := range m.Tags {
-				t = strings.TrimSpace(t)
-				tags[t] = append(tags[t], mLine)
-			}
+			m, err = NewCircleMarker(line)
 
 		} else if strings.HasPrefix(line, "p") {
 			// Polygon
-			m, err := NewPolyMarker(line)
-			if err != nil {
-				panic(err)
-			}
-
-			mLine := "L.polygon(["
-			for i, p := range m.Points {
-				mLine += p.String()
-				if i+1 < len(m.Points) {
-					mLine += ","
-				}
-			}
-			mLine += fmt.Sprintf("],{ color: 'red', fillColor: '#f03', fillOpacity: 0.2}).bindPopup(\"%s\")", m.Text)
-
-			for _, t := range m.Tags {
-				t = strings.TrimSpace(t)
-				tags[t] = append(tags[t], mLine)
-			}
+			m, err = NewPolyMarker(line)
 
 		} else {
-			// Marker
-			m, err := NewPointMarker(line)
-			if err != nil {
-				panic(err)
-			}
-
-			mLine := fmt.Sprintf("L.marker(%s).bindPopup(\"%s\")", m.Point.String(), m.Text)
-			for _, t := range m.Tags {
-				t = strings.TrimSpace(t)
-				tags[t] = append(tags[t], mLine)
-			}
+			// Point
+			m, err = NewPointMarker(line)
 		}
+
+		// Handle err
+		if err != nil {
+			panic(err)
+		}
+
+		// Hook it into the tag map
+		tags = addLineToTags(tags, m.String(), m.Tags())
 
 	}
 	if err := scanner.Err(); err != nil {
@@ -122,4 +101,14 @@ func main() {
 		fmt.Printf("layerControl.addOverlay(%s, \"%s\");\n", t, strings.Title(t))
 	}
 
+}
+
+// addLineToTags iterates over the tags, and adds the line to each valid entry in the tagMap
+func addLineToTags(tagMap map[string][]string, line string, tags []string) map[string][]string {
+	for _, t := range tags {
+		t = strings.TrimSpace(t)
+		tagMap[t] = append(tagMap[t], line)
+	}
+
+	return tagMap
 }

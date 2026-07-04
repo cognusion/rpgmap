@@ -15,10 +15,28 @@ func (p Point) String() string {
 	return fmt.Sprintf("[%f,%f]", p[0], p[1])
 }
 
+// TagStringer is a nonsense interface that defines the only two things we really need
+// from these types in order to generate the text we need.
+type TagStringer interface {
+	String() string
+	Tags() []string
+}
+
 // Marker is a type that has a description and a list of tags.
 type Marker struct {
 	Text string
-	Tags []string
+	tags []string
+}
+
+// AddTags takes an arbitrary number of strings and appends them to
+// the internal tag list
+func (m *Marker) AddTags(tags ...string) {
+	m.tags = append(m.tags, tags...)
+}
+
+// Tags returns the internal tag list
+func (m *Marker) Tags() []string {
+	return m.tags
 }
 
 // PointMarker is a Marker referred to by a single Point.
@@ -27,10 +45,27 @@ type PointMarker struct {
 	Marker
 }
 
+func (m PointMarker) String() string {
+	return fmt.Sprintf("L.marker(%s).bindPopup(\"%s\")", m.Point.String(), m.Text)
+}
+
 // PolyMarker is a Marker referred to by a list of Point creating a polygon.
 type PolyMarker struct {
 	Points []Point
 	Marker
+}
+
+func (m PolyMarker) String() string {
+	mLine := "L.polygon(["
+	for i, p := range m.Points {
+		mLine += p.String()
+		if i+1 < len(m.Points) {
+			mLine += ","
+		}
+	}
+	mLine += fmt.Sprintf("],{ color: 'red', fillColor: '#f03', fillOpacity: 0.2}).bindPopup(\"%s\")", m.Text)
+
+	return mLine
 }
 
 // CircleMarker is a Marker referred to by a Point centroid and a radius from that point.
@@ -38,6 +73,11 @@ type CircleMarker struct {
 	Point  Point
 	Radius float64
 	Marker
+}
+
+func (m CircleMarker) String() string {
+	return fmt.Sprintf("L.circle(%s,{ radius: %f, color: 'red', fillColor: '#f03', fillOpacity: 0.2}).bindPopup(\"%s\")", m.Point.String(), m.Radius, m.Text)
+
 }
 
 // NewPointMarker takes a line string and returns a PointMarker or an error.
@@ -50,7 +90,7 @@ func NewPointMarker(line string) (*PointMarker, error) {
 	}
 	m.Point = Point{cast.ToFloat64(strings.TrimSpace(parts[0])), cast.ToFloat64(strings.TrimSpace(parts[1]))}
 	m.Text = strings.TrimSpace(parts[2])
-	m.Tags = append(m.Tags, parts[3:]...)
+	m.AddTags(parts[3:]...)
 
 	return &m, nil
 }
@@ -66,7 +106,7 @@ func NewCircleMarker(line string) (*CircleMarker, error) {
 	m.Point = Point{cast.ToFloat64(strings.TrimSpace(parts[1])), cast.ToFloat64(strings.TrimSpace(parts[2]))}
 	m.Radius = cast.ToFloat64(parts[3])
 	m.Text = strings.TrimSpace(parts[4])
-	m.Tags = append(m.Tags, parts[5:]...)
+	m.AddTags(parts[5:]...)
 
 	return &m, nil
 }
@@ -100,7 +140,7 @@ func NewPolyMarker(line string) (*PolyMarker, error) {
 	}
 	m.Points = points
 	m.Text = strings.TrimSpace(parts[count+1])
-	m.Tags = append(m.Tags, parts[count+2:]...)
+	m.AddTags(parts[count+2:]...)
 
 	return &m, nil
 }
