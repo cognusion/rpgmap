@@ -15,6 +15,51 @@ func (p Point) String() string {
 	return fmt.Sprintf("[%f,%f]", p[0], p[1])
 }
 
+// Options is a slice of Opts, for all Markers to inherit
+type Options []Opt
+
+// Opt is a {string,any} tuple
+type Opt struct {
+	Option string
+	Value  any
+}
+
+// Add appends slices of Opt
+func (o *Options) Add(options ...Opt) {
+	*o = append(*o, options...)
+}
+
+// IsEmpty return true if Options has no entries.
+func (o *Options) IsEmpty() bool {
+	return len(*o) == 0
+}
+
+// String returns the stringified list of Opt.
+func (o *Options) String() string {
+	var l strings.Builder
+	l.WriteString("{")
+
+	c := 0
+	for _, opt := range *o {
+		if c > 0 {
+			l.WriteString(",")
+		}
+		c++
+
+		switch t := opt.Value.(type) {
+		case string:
+			fmt.Fprintf(&l, "%s: '%s'", opt.Option, t)
+		case float64:
+			fmt.Fprintf(&l, "%s: %f", opt.Option, t)
+		default:
+			// probably should error, but...
+			fmt.Fprintf(&l, "%s: '%v", opt.Option, t)
+		}
+	}
+	l.WriteString("}")
+	return l.String()
+}
+
 // TagStringer is a nonsense interface that defines the only two things we really need
 // from these types in order to generate the text we need.
 type TagStringer interface {
@@ -25,6 +70,7 @@ type TagStringer interface {
 // Marker is a type that has a description and a list of tags.
 type Marker struct {
 	Text string
+	Options
 	tags []string
 }
 
@@ -46,7 +92,12 @@ type PointMarker struct {
 }
 
 func (m PointMarker) String() string {
-	return fmt.Sprintf("L.marker(%s).bindPopup(\"%s\")", m.Point.String(), m.Text)
+	var mLine string
+	mLine = m.Point.String()
+	if !m.Options.IsEmpty() {
+		mLine += "," + m.Options.String()
+	}
+	return fmt.Sprintf("L.marker(%s).bindPopup(\"%s\")", mLine, m.Text)
 }
 
 // PolyMarker is a Marker referred to by a list of Point creating a polygon.
@@ -56,16 +107,21 @@ type PolyMarker struct {
 }
 
 func (m PolyMarker) String() string {
-	mLine := "L.polygon(["
+	var mLine strings.Builder
+	mLine.WriteString("L.polygon([")
 	for i, p := range m.Points {
-		mLine += p.String()
+		mLine.WriteString(p.String())
 		if i+1 < len(m.Points) {
-			mLine += ","
+			mLine.WriteString(",")
 		}
 	}
-	mLine += fmt.Sprintf("],{ color: 'red', fillColor: '#f03', fillOpacity: 0.2}).bindPopup(\"%s\")", m.Text)
+	mLine.WriteString("]")
+	if !m.Options.IsEmpty() {
+		fmt.Fprintf(&mLine, ",%s", m.Options.String())
+	}
+	fmt.Fprintf(&mLine, ").bindPopup(\"%s\")", m.Text)
 
-	return mLine
+	return mLine.String()
 }
 
 // CircleMarker is a Marker referred to by a Point centroid and a radius from that point.
@@ -76,8 +132,13 @@ type CircleMarker struct {
 }
 
 func (m CircleMarker) String() string {
-	return fmt.Sprintf("L.circle(%s,{ radius: %f, color: 'red', fillColor: '#f03', fillOpacity: 0.2}).bindPopup(\"%s\")", m.Point.String(), m.Radius, m.Text)
-
+	var mLine strings.Builder
+	fmt.Fprintf(&mLine, "L.circle(%s", m.Point.String())
+	if !m.Options.IsEmpty() {
+		fmt.Fprintf(&mLine, ",%s", m.Options.String())
+	}
+	fmt.Fprintf(&mLine, ".bindPopup(\"%s\")", m.Text)
+	return mLine.String()
 }
 
 // NewPointMarker takes a line string and returns a PointMarker or an error.
@@ -108,6 +169,7 @@ func NewCircleMarker(line string) (*CircleMarker, error) {
 	m.Text = strings.TrimSpace(parts[4])
 	m.AddTags(parts[5:]...)
 
+	m.Options.Add(Opt{"color", "red"}, Opt{"fillColor", "#f03"}, Opt{"radius", m.Radius}, Opt{"fillOpacity", 0.2})
 	return &m, nil
 }
 
@@ -142,5 +204,6 @@ func NewPolyMarker(line string) (*PolyMarker, error) {
 	m.Text = strings.TrimSpace(parts[count+1])
 	m.AddTags(parts[count+2:]...)
 
+	m.Options.Add(Opt{"color", "red"}, Opt{"fillColor", "#f03"}, Opt{"fillOpacity", 0.2})
 	return &m, nil
 }
