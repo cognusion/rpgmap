@@ -110,7 +110,10 @@ func main() {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	var line string
+	var (
+		line         string
+		commentBlock bool
+	)
 	for scanner.Scan() {
 		// We always trimp starting and ending whitespace
 		line = strings.TrimSpace(scanner.Text())
@@ -123,7 +126,19 @@ func main() {
 		if strings.HasPrefix(line, "//") || strings.HasPrefix(line, "#") {
 			continue
 		}
+		if strings.HasPrefix(line, "/*") {
+			commentBlock = true
+			continue
+		}
+		if strings.HasPrefix(line, "*/") {
+			commentBlock = false
+			continue
+		}
+		if commentBlock {
+			continue
+		}
 
+		// Process it!
 		if strings.HasPrefix(line, "c") {
 			// circle
 			m, err := newCirclemarker(line)
