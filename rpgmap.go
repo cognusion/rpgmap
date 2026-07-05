@@ -27,6 +27,7 @@ func main() {
 	scanner := bufio.NewScanner(f)
 	var (
 		tags         = make(map[string][]string)
+		icons        = make(map[string]Icon)
 		line         string
 		commentBlock bool
 	)
@@ -59,7 +60,16 @@ func main() {
 		)
 
 		// Build based on the line type
-		if strings.HasPrefix(line, "c") {
+		if strings.HasPrefix(line, "i") {
+			// icon!!
+			i, ie := NewIcon(line)
+			if ie != nil {
+				panic(ie)
+			}
+			icons[i.Tag] = *i
+			continue // we don't want to continue on
+
+		} else if strings.HasPrefix(line, "c") {
 			// circle
 			m, err = NewCircleMarker(line)
 
@@ -69,7 +79,8 @@ func main() {
 
 		} else {
 			// Point
-			m, err = NewPointMarker(line)
+			m, err = NewPointMarker(line, icons)
+
 		}
 
 		// Handle err
@@ -87,6 +98,11 @@ func main() {
 
 	// Dump
 	fmt.Printf("var layerControl = L.control.layers().addTo(map)\n")
+
+	for tag, icon := range icons {
+		fmt.Printf("var %sIcon = %s;\n", tag, icon.String())
+	}
+
 	sortedTags := slices.Sorted(maps.Keys(tags))
 	for _, t := range sortedTags {
 		lines := tags[t]

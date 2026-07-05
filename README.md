@@ -7,9 +7,14 @@ Usage of ./rpgmap:
   -c, --config string   Config file to read
 ```
 ## Point Markers
-Point markers match the format below. `x` and `y` must be numeric. Tags must be one word, no punctuation.
+Point markers match the format below. `x` and `y` must be numeric. Tags must be one word, no punctuation. The first tag is used to set the icon, if any.
 
 `x,y,Text Comment,tag1,tag2`
+
+### Point Marker icons
+To define an icon for a tag type, use the format below. `x` and `y` must be numeric, and must be sequential tuples: The first tuple is *required* and is the width and height of the icon; The second tuple is optional, and references which point on the icon will be anchored to the spot. The default is `0,0`. Only the first tag in a Point Marker will be used when determining which icon to set.
+
+`i,tag,uri,x,y,x,y`
 
 ## Polygon Markers
 Polygon markers match the format below. `x` and `y` must be numeric, and must be sequential tuples. The last tuple will automatically close to the first tuple. Tags must be one word, no punctuation.

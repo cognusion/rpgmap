@@ -48,7 +48,13 @@ func (o *Options) String() string {
 
 		switch t := opt.Value.(type) {
 		case string:
-			fmt.Fprintf(&l, "%s: '%s'", opt.Option, t)
+			if ct, bare := strings.CutPrefix(t, "BARE"); bare {
+				// Don't quote it
+				fmt.Fprintf(&l, "%s: %s", opt.Option, ct)
+			} else {
+				// Quote it
+				fmt.Fprintf(&l, "%s: '%s'", opt.Option, t)
+			}
 		case float64:
 			fmt.Fprintf(&l, "%s: %f", opt.Option, t)
 		default:
@@ -85,10 +91,24 @@ func (m *Marker) Tags() []string {
 	return m.tags
 }
 
+// Icon is a type to describe a tag-associated PointMarker icon
+type Icon struct {
+	Tag        string
+	URI        string
+	Size       Point
+	IconAnchor Point
+}
+
+func (i *Icon) String() string {
+	return fmt.Sprintf("L.icon({ iconUrl: '%s', iconSize: %s, iconAnchor: %s })", i.URI, i.Size, i.IconAnchor)
+	// We can always get away with printing iconanchor because the default is 0,0
+}
+
 // PointMarker is a Marker referred to by a single Point.
 type PointMarker struct {
 	Point Point
 	Marker
+	IconTag string
 }
 
 func (m PointMarker) String() string {
@@ -141,8 +161,29 @@ func (m CircleMarker) String() string {
 	return mLine.String()
 }
 
+// NewIcon takes a line string and returns and Icon or an error.
+func NewIcon(line string) (*Icon, error) {
+	parts := strings.Split(line, ",")
+	if len(parts) < 5 {
+		return nil, fmt.Errorf("not enough parameters in line")
+	}
+
+	i := Icon{
+		Tag:        parts[1],
+		URI:        parts[2],
+		Size:       Point{cast.ToFloat64(strings.TrimSpace(parts[3])), cast.ToFloat64(strings.TrimSpace(parts[4]))},
+		IconAnchor: Point{0, 0}, //default origin
+	}
+	if len(parts) == 7 {
+		// anchor point specified
+		i.IconAnchor = Point{cast.ToFloat64(strings.TrimSpace(parts[5])), cast.ToFloat64(strings.TrimSpace(parts[6]))}
+	}
+
+	return &i, nil
+}
+
 // NewPointMarker takes a line string and returns a PointMarker or an error.
-func NewPointMarker(line string) (*PointMarker, error) {
+func NewPointMarker(line string, icons map[string]Icon) (*PointMarker, error) {
 	m := PointMarker{}
 
 	parts := strings.Split(line, ",")
@@ -152,6 +193,12 @@ func NewPointMarker(line string) (*PointMarker, error) {
 	m.Point = Point{cast.ToFloat64(strings.TrimSpace(parts[0])), cast.ToFloat64(strings.TrimSpace(parts[1]))}
 	m.Text = strings.TrimSpace(parts[2])
 	m.AddTags(parts[3:]...)
+
+	if icons != nil {
+		if _, ok := icons[parts[3]]; ok {
+			m.Options.Add(Opt{"icon", fmt.Sprintf("BARE%sIcon", parts[3])})
+		}
+	}
 
 	return &m, nil
 }
