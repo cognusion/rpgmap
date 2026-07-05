@@ -53,6 +53,8 @@ Point markers match the format below. `x` and `y` must be numeric. Tags must be 
 ### Point Marker icons
 To define an icon for a tag type, use the format below. `x` and `y` must be numeric, and must be sequential tuples: The first tuple is *required* and is the width and height of the icon; The second tuple is optional, and references which point on the icon will be anchored to the spot. The default is `0,0`. Only the first tag in a Point Marker will be used when determining which icon to set.
 
+**WARNING**: Icons need to be defined before a PointMarker that uses the icon, or it will be missed. (Yes, I could do a first-pass to find all of the icon lines, but I don't want to. Put them up top. Now. Stop reading. Go do it.)
+
 `i,tag,uri,x,y,x,y`
 
 ## Polygon Markers

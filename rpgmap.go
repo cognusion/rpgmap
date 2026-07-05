@@ -106,7 +106,8 @@ func main() {
 	sortedTags := slices.Sorted(maps.Keys(tags))
 	for _, t := range sortedTags {
 		lines := tags[t]
-		fmt.Printf("var %s = L.layerGroup([\n", t)
+		tag := CleanTag(t)
+		fmt.Printf("var %s = L.layerGroup([\n", tag)
 		for i, l := range lines {
 			fmt.Printf("\t%s", l)
 			if i+1 < len(lines) {
@@ -114,7 +115,7 @@ func main() {
 			}
 		}
 		fmt.Println("])")
-		fmt.Printf("layerControl.addOverlay(%s, \"%s\");\n", t, strings.Title(t))
+		fmt.Printf("layerControl.addOverlay(%s, \"%s\");\n", tag, strings.Title(t))
 	}
 
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -169,7 +170,7 @@ func NewIcon(line string) (*Icon, error) {
 	}
 
 	i := Icon{
-		Tag:        parts[1],
+		Tag:        CleanTag(parts[1]),
 		URI:        parts[2],
 		Size:       Point{cast.ToFloat64(strings.TrimSpace(parts[3])), cast.ToFloat64(strings.TrimSpace(parts[4]))},
 		IconAnchor: Point{0, 0}, //default origin
@@ -194,9 +195,10 @@ func NewPointMarker(line string, icons map[string]Icon) (*PointMarker, error) {
 	m.Text = strings.TrimSpace(parts[2])
 	m.AddTags(parts[3:]...)
 
+	tag := CleanTag(parts[3])
 	if icons != nil {
-		if _, ok := icons[parts[3]]; ok {
-			m.Options.Add(Opt{"icon", fmt.Sprintf("BARE%sIcon", parts[3])})
+		if _, ok := icons[tag]; ok {
+			m.Options.Add(Opt{"icon", fmt.Sprintf("BARE%sIcon", tag)})
 		}
 	}
 
@@ -253,4 +255,10 @@ func NewPolyMarker(line string) (*PolyMarker, error) {
 
 	m.Options.Add(Opt{"color", "red"}, Opt{"fillColor", "#f03"}, Opt{"fillOpacity", 0.2})
 	return &m, nil
+}
+
+// CleanTag removes all non-letters from a tag
+func CleanTag(tag string) string {
+	reg := regexp.MustCompile(`[^\p{L}]+`)
+	return reg.ReplaceAllString(tag, "")
 }
