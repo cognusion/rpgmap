@@ -36,6 +36,9 @@ Lines that start with `/*` start a comment block, and all lines are ignored unti
 // Circle!
 c,-38.85682, -24.98291,2250000,Whirlpool,nature,dangers
 
+// icon!
+i,places,icons/places.png,50,50,25,25
+
 // Point!
 39.027719, 52.382813,That Place,places
 
