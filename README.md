@@ -1,11 +1,50 @@
 # rpgmap
 
-CLI tool to generate leaflet markers or polygons, with tag-based layerGroups for autotoggles.
+CLI tool to generate [leaflet](https://leafletjs.com/) markers, polygons, and circles; With tag-based layerGroups for autotoggles, and tag-based custom icons.
 
 ```bash
 Usage of ./rpgmap:
   -c, --config string   Config file to read
 ```
+
+The output of `rpgmap` is a valid JS file for use with a predefined map var named `map`. 
+
+Below is a terse, non-working snippet to demonstrate. (The header `link` and `script` need to be corrected. `var imageUrl` needs to point to a valid image for the map, the `bounds` need to be correct, etc. etc.)
+
+You can use tiles, projections, whatever.
+
+```html
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.css>
+    <script src="https://unpkg.com/leaflet.js"></script>
+</head>
+<body>
+
+
+<div id="map" style="width: 100%; height: 100%;"></div>
+
+<script>
+    var map = L.map('map', {
+        crs: L.CRS.Simple,
+        minZoom: -3,
+        maxZoom: 3 
+    });
+
+    var bounds = [[0, 0], [6144, 8192]];
+
+    var imageUrl = 'yermap.png';
+    L.imageOverlay(imageUrl, bounds).addTo(map);
+    map.fitBounds(bounds);
+</script>
+
+<script src="rpgmap.out.js"></script>
+
+</body>
+</html>
+```
+
+
 ## Point Markers
 Point markers match the format below. `x` and `y` must be numeric. Tags must be one word, no punctuation. The first tag is used to set the icon, if any.
 
