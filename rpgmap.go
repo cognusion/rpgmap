@@ -30,6 +30,7 @@ func main() {
 		icons        = make(map[string]Icon)
 		line         string
 		commentBlock bool
+		altMaps      = make([]Map, 0)
 	)
 	for scanner.Scan() {
 		// We always trim starting and ending whitespace
@@ -60,7 +61,16 @@ func main() {
 		)
 
 		// Build based on the line type
-		if strings.HasPrefix(line, "i") {
+		if strings.HasPrefix(line, "a") {
+			// Altmap!
+			a, ae := NewMap(line)
+			if ae != nil {
+				panic(ae)
+			}
+			altMaps = append(altMaps, *a)
+			continue // we're done with this line
+
+		} else if strings.HasPrefix(line, "i") {
 			// icon!!
 			i, ie := NewIcon(line)
 			if ie != nil {
@@ -98,6 +108,10 @@ func main() {
 
 	// Dump
 	fmt.Printf("var layerControl = L.control.layers().addTo(map)\n")
+
+	for _, altmap := range altMaps {
+		fmt.Printf("%s\n", altmap.String())
+	}
 
 	for tag, icon := range icons {
 		fmt.Printf("var %sIcon = %s;\n", tag, icon.String())

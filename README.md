@@ -43,12 +43,15 @@ You can use tiles, projections, whatever.
 </body>
 </html>
 ```
+## Maps
+Tile layers match the format below, and are added to the layerControl above the marker layers. Only one Map can be visible at a time, unless opacity settings or transparent tile backgrounds fake it otherwise. Options should generally match those in the basemap.
 
+`a,Name,URI[,option:value[,option:value[,...]]]`
 
 ## Point Markers
 Point markers match the format below. `x` and `y` must be numeric. Tags must be one word, no punctuation. The first tag is used to set the icon, if any.
 
-`x,y,Text Comment,tag1,tag2`
+`x,y,Text Comment,tag1[,tag2[,...]]]`
 
 ### Point Marker icons
 To define an icon for a tag type, use the format below. `x` and `y` must be numeric, and must be sequential tuples: The first tuple is *required* and is the width and height of the icon; The second tuple is optional, and references which point on the icon will be anchored to the spot. The default is `0,0`. Only the first tag in a Point Marker will be used when determining which icon to set.
@@ -60,12 +63,12 @@ To define an icon for a tag type, use the format below. `x` and `y` must be nume
 ## Polygon Markers
 Polygon markers match the format below. `x` and `y` must be numeric, and must be sequential tuples. The last tuple will automatically close to the first tuple. Tags must be one word, no punctuation.
 
-`p,x,y,x,y,x,y,x,y,Text Comment,tag1,tag2`
+`p,x,y,x,y,x,y,x,y,Text Comment,tag1[,tag2[,...]]]`
 
 ## Circle Markers
 Circle markers match the format below. `x` and `y` must be numeric and reflect the center of the circle. 'radius' must be numeric. Tags must be one word, no punctuation.
 
-`c,x,y,radius,Text Comment,tag1,tag2`
+`c,x,y,radius,Text Comment,tag1[,tag2[,...]]]`
 
 ## Comments
 Lines that start with `#` or `//` are ignored.

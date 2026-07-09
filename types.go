@@ -16,57 +16,6 @@ func (p Point) String() string {
 	return fmt.Sprintf("[%f,%f]", p[0], p[1])
 }
 
-// Options is a slice of Opts, for all Markers to inherit
-type Options []Opt
-
-// Opt is a {string,any} tuple
-type Opt struct {
-	Option string
-	Value  any
-}
-
-// Add appends slices of Opt
-func (o *Options) Add(options ...Opt) {
-	*o = append(*o, options...)
-}
-
-// IsEmpty return true if Options has no entries.
-func (o *Options) IsEmpty() bool {
-	return len(*o) == 0
-}
-
-// String returns the stringified list of Opt.
-func (o *Options) String() string {
-	var l strings.Builder
-	l.WriteString("{")
-
-	c := 0
-	for _, opt := range *o {
-		if c > 0 {
-			l.WriteString(",")
-		}
-		c++
-
-		switch t := opt.Value.(type) {
-		case string:
-			if ct, bare := strings.CutPrefix(t, "BARE"); bare {
-				// Don't quote it
-				fmt.Fprintf(&l, "%s: %s", opt.Option, ct)
-			} else {
-				// Quote it
-				fmt.Fprintf(&l, "%s: '%s'", opt.Option, t)
-			}
-		case float64:
-			fmt.Fprintf(&l, "%s: %f", opt.Option, t)
-		default:
-			// probably should error, but...
-			fmt.Fprintf(&l, "%s: '%v", opt.Option, t)
-		}
-	}
-	l.WriteString("}")
-	return l.String()
-}
-
 // TagStringer is a nonsense interface that defines the only two things we really need
 // from these types in order to generate the text we need.
 type TagStringer interface {
@@ -90,6 +39,24 @@ func (m *Marker) AddTags(tags ...string) {
 // Tags returns the internal tag list
 func (m *Marker) Tags() []string {
 	return m.tags
+}
+
+// Map is a type to describe an overlay map
+type Map struct {
+	Name string
+	URI  string
+	Options
+}
+
+func (m *Map) String() string {
+	var mLine strings.Builder
+	cname := CleanTag(m.Name)
+	fmt.Fprintf(&mLine, "var %s = L.tileLayer('%s'", cname, m.URI)
+	if !m.Options.IsEmpty() {
+		fmt.Fprintf(&mLine, ",%s", m.Options.String())
+	}
+	fmt.Fprintf(&mLine, ")\nlayerControl.addOverlay(%s, \"%s\");", cname, m.Name)
+	return mLine.String()
 }
 
 // Icon is a type to describe a tag-associated PointMarker icon
@@ -162,7 +129,27 @@ func (m CircleMarker) String() string {
 	return mLine.String()
 }
 
-// NewIcon takes a line string and returns and Icon or an error.
+// NewMap takes a line string and return a Map or an error.
+func NewMap(line string) (*Map, error) {
+	parts := strings.Split(line, ",")
+	if len(parts) < 3 {
+		return nil, fmt.Errorf("not enough parameters in line")
+	}
+	m := Map{
+		Name: parts[1],
+		URI:  parts[2],
+	}
+	for _, p := range parts[3:] {
+		o, e := ParseOptString(p)
+		if e != nil {
+			return nil, fmt.Errorf("error parsing an option: %w", e)
+		}
+		m.Options.Add(o)
+	}
+	return &m, nil
+}
+
+// NewIcon takes a line string and returns an Icon or an error.
 func NewIcon(line string) (*Icon, error) {
 	parts := strings.Split(line, ",")
 	if len(parts) < 5 {
