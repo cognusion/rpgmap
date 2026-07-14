@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/cognusion/rpgmap"
 	"github.com/spf13/pflag"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -44,10 +45,10 @@ func main() {
 	scanner := bufio.NewScanner(f)
 	var (
 		tags         = make(map[string][]string)
-		icons        = make(map[string]Icon)
+		icons        = make(map[string]rpgmap.Icon)
 		line         string
 		commentBlock bool
-		altMaps      = make([]Map, 0)
+		altMaps      = make([]rpgmap.Map, 0)
 	)
 	for scanner.Scan() {
 		// We always trim starting and ending whitespace
@@ -73,14 +74,14 @@ func main() {
 
 		// Process it!
 		var (
-			m   TagStringer
+			m   rpgmap.TagStringer
 			err error
 		)
 
 		// Build based on the line type
 		if strings.HasPrefix(line, "a") {
 			// Altmap!
-			a, ae := NewMap(line)
+			a, ae := rpgmap.NewMap(line)
 			if ae != nil {
 				die(ae)
 			}
@@ -89,7 +90,7 @@ func main() {
 
 		} else if strings.HasPrefix(line, "i") {
 			// icon!!
-			i, ie := NewIcon(line)
+			i, ie := rpgmap.NewIcon(line)
 			if ie != nil {
 				die(ie)
 			}
@@ -98,15 +99,15 @@ func main() {
 
 		} else if strings.HasPrefix(line, "c") {
 			// circle
-			m, err = NewCircleMarker(line)
+			m, err = rpgmap.NewCircleMarker(line)
 
 		} else if strings.HasPrefix(line, "p") {
 			// Polygon
-			m, err = NewPolyMarker(line)
+			m, err = rpgmap.NewPolyMarker(line)
 
 		} else {
 			// Point
-			m, err = NewPointMarker(line, icons)
+			m, err = rpgmap.NewPointMarker(line, icons)
 
 		}
 
@@ -137,7 +138,7 @@ func main() {
 	sortedTags := slices.Sorted(maps.Keys(tags))
 	for _, t := range sortedTags {
 		lines := tags[t]
-		tag := CleanTag(t)
+		tag := rpgmap.CleanTag(t)
 		fmt.Printf("var %s = L.layerGroup([\n", tag)
 		for i, l := range lines {
 			fmt.Printf("\t%s", l)
@@ -148,7 +149,6 @@ func main() {
 		fmt.Println("])")
 		fmt.Printf("layerControl.addOverlay(%s, \"%s\");\n", tag, title(t))
 	}
-
 }
 
 // addLineToTags iterates over the tags, and adds the line to each valid entry in the tagMap
