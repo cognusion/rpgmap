@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func die(e error) {
@@ -18,6 +20,12 @@ func die(e error) {
 func dief(format string, a ...any) {
 	fmt.Printf(format, a...)
 	os.Exit(1)
+}
+
+// strings.Title is deprecated, so we have recreated it, because that's better.
+func title(in string) string {
+	engCaser := cases.Title(language.English)
+	return engCaser.String(in)
 }
 
 func main() {
@@ -138,7 +146,7 @@ func main() {
 			}
 		}
 		fmt.Println("])")
-		fmt.Printf("layerControl.addOverlay(%s, \"%s\");\n", tag, strings.Title(t))
+		fmt.Printf("layerControl.addOverlay(%s, \"%s\");\n", tag, title(t))
 	}
 
 }
