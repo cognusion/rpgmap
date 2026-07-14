@@ -11,6 +11,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+func die(e error) {
+	dief("%s\n", e)
+}
+
+func dief(format string, a ...any) {
+	fmt.Printf(format, a...)
+	os.Exit(1)
+}
+
 func main() {
 
 	var (
@@ -20,7 +29,7 @@ func main() {
 
 	f, err := os.Open(*conf)
 	if err != nil {
-		panic(err) // TODO
+		dief("Error opening config file '%s': %s\n", *conf, err)
 	}
 	defer f.Close()
 
@@ -65,7 +74,7 @@ func main() {
 			// Altmap!
 			a, ae := NewMap(line)
 			if ae != nil {
-				panic(ae)
+				die(ae)
 			}
 			altMaps = append(altMaps, *a)
 			continue // we're done with this line
@@ -74,7 +83,7 @@ func main() {
 			// icon!!
 			i, ie := NewIcon(line)
 			if ie != nil {
-				panic(ie)
+				die(ie)
 			}
 			icons[i.Tag] = *i
 			continue // we don't want to continue on
@@ -95,7 +104,7 @@ func main() {
 
 		// Handle err
 		if err != nil {
-			panic(err)
+			die(err)
 		}
 
 		// Hook it into the tag map
@@ -103,7 +112,7 @@ func main() {
 
 	}
 	if err := scanner.Err(); err != nil {
-		panic(err) //TODO
+		die(err)
 	}
 
 	// Dump
