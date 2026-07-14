@@ -16,6 +16,24 @@ func (p Point) String() string {
 	return fmt.Sprintf("[%f,%f]", p[0], p[1])
 }
 
+// TagsToOpts takes a list of tags and returns a list of tags and Opts if any.
+func TagsToOpts(tags ...string) ([]string, []Opt) {
+	var (
+		os = make([]Opt, 0)
+		ts = make([]string, 0)
+	)
+
+	for _, t := range tags {
+		if strings.Contains(t, ":") {
+			o, _ := ParseOptString(t) // We are deliberately ignoring errs because we have mitigated the only returned error already
+			os = append(os, o)
+		} else {
+			ts = append(ts, t)
+		}
+	}
+	return ts, os
+}
+
 // TagStringer is a nonsense interface that defines the only two things we really need
 // from these types in order to generate the text we need.
 type TagStringer interface {
@@ -180,13 +198,21 @@ func NewPointMarker(line string, icons map[string]Icon) (*PointMarker, error) {
 	}
 	m.Point = Point{cast.ToFloat64(strings.TrimSpace(parts[0])), cast.ToFloat64(strings.TrimSpace(parts[1]))}
 	m.Text = strings.TrimSpace(parts[2])
-	m.AddTags(parts[3:]...)
 
-	tag := CleanTag(parts[3])
-	if icons != nil {
-		if _, ok := icons[tag]; ok {
-			m.Options.Add(Opt{"icon", fmt.Sprintf("BARE%sIcon", tag)})
+	tags, opts := TagsToOpts(parts[3:]...)
+
+	if len(tags) > 0 {
+		m.AddTags(tags...)
+
+		if icons != nil {
+			tag := CleanTag(tags[0])
+			if _, ok := icons[tag]; ok {
+				m.Options.Add(Opt{"icon", fmt.Sprintf("BARE%sIcon", tag)})
+			}
 		}
+	}
+	if len(opts) > 0 {
+		m.Options.Add(opts...)
 	}
 
 	return &m, nil
@@ -203,9 +229,17 @@ func NewCircleMarker(line string) (*CircleMarker, error) {
 	m.Point = Point{cast.ToFloat64(strings.TrimSpace(parts[1])), cast.ToFloat64(strings.TrimSpace(parts[2]))}
 	m.Radius = cast.ToFloat64(parts[3])
 	m.Text = strings.TrimSpace(parts[4])
-	m.AddTags(parts[5:]...)
+	m.Options.Add(Opt{"radius", m.Radius})
 
-	m.Options.Add(Opt{"color", "red"}, Opt{"fillColor", "#f03"}, Opt{"radius", m.Radius}, Opt{"fillOpacity", 0.2})
+	tags, opts := TagsToOpts(parts[5:]...)
+
+	if len(tags) > 0 {
+		m.AddTags(tags...)
+	}
+	if len(opts) > 0 {
+		m.Options.Add(opts...)
+	}
+
 	return &m, nil
 }
 
@@ -238,9 +272,16 @@ func NewPolyMarker(line string) (*PolyMarker, error) {
 	}
 	m.Points = points
 	m.Text = strings.TrimSpace(parts[count+1])
-	m.AddTags(parts[count+2:]...)
 
-	m.Options.Add(Opt{"color", "red"}, Opt{"fillColor", "#f03"}, Opt{"fillOpacity", 0.2})
+	tags, opts := TagsToOpts(parts[count+2:]...)
+
+	if len(tags) > 0 {
+		m.AddTags(tags...)
+	}
+	if len(opts) > 0 {
+		m.Options.Add(opts...)
+	}
+
 	return &m, nil
 }
 

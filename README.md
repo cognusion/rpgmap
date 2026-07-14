@@ -49,7 +49,7 @@ Tile layers match the format below, and are added to the layerControl above the 
 `a,Name,URI[,option:value[,option:value[,...]]]`
 
 ## Point Markers
-Point markers match the format below. `x` and `y` must be numeric. Tags must be one word, no punctuation. The first tag is used to set the icon, if any.
+Point markers match the format below. `x` and `y` must be numeric. Tags should contain no punctuation. Tags containing a colon (:) are assumed to be options. The first tag is used to set the icon, if any.
 
 `x,y,Text Comment,tag1[,tag2[,...]]]`
 
@@ -61,12 +61,12 @@ To define an icon for a tag type, use the format below. `x` and `y` must be nume
 `i,tag,uri,x,y,x,y`
 
 ## Polygon Markers
-Polygon markers match the format below. `x` and `y` must be numeric, and must be sequential tuples. The last tuple will automatically close to the first tuple. Tags must be one word, no punctuation.
+Polygon markers match the format below. `x` and `y` must be numeric, and must be sequential tuples. The last tuple will automatically close to the first tuple. Tags should contain no punctuation. Tags containing a colon (:) are assumed to be options.
 
 `p,x,y,x,y,x,y,x,y,Text Comment,tag1[,tag2[,...]]]`
 
 ## Circle Markers
-Circle markers match the format below. `x` and `y` must be numeric and reflect the center of the circle. 'radius' must be numeric. Tags must be one word, no punctuation.
+Circle markers match the format below. `x` and `y` must be numeric and reflect the center of the circle. 'radius' must be numeric. Tags should contain no punctuation. Tags containing a colon (:) are assumed to be options.
 
 `c,x,y,radius,Text Comment,tag1[,tag2[,...]]]`
 
@@ -80,7 +80,7 @@ If you put the configuration stanzas below into a file called `ex`
 
 ```
 // Circle!
-c,-38.85682, -24.98291,2250000,Whirlpool,nature,dangers
+c,-38.85682, -24.98291,2250000,Whirlpool,natural dangers,color:blue,fillColor:#30f,fillOpacity:0.2
 
 // icon!
 i,places,icons/places.png,50,50,25,25
@@ -89,7 +89,7 @@ i,places,icons/places.png,50,50,25,25
 39.027719, 52.382813,That Place,places
 
 // Polygon!
-p,15.45368, 3.339844,27.722436, 29.003906,38.410558, 42.1875,36.491973, 55.063477,31.728167, 58.31543,30.826781, 63.588867,14.689881, 82.045898,13.795406, 91.625977,3.908099, 95.317383,3.294082, 104.589844,-6.8828, 103.447266,-14.85985, 106.391602,-24.806681, 107.841797,-33.687782, 89.692383,-33.100745, 71.411133,-5.790897, 22.324219,-6.489983, 4.130859,That Region,regions
+p,15.45368, 3.339844,27.722436, 29.003906,38.410558, 42.1875,36.491973, 55.063477,31.728167, 58.31543,30.826781, 63.588867,14.689881, 82.045898,13.795406, 91.625977,3.908099, 95.317383,3.294082, 104.589844,-6.8828, 103.447266,-14.85985, 106.391602,-24.806681, 107.841797,-33.687782, 89.692383,-33.100745, 71.411133,-5.790897, 22.324219,-6.489983, 4.130859,That Region,regions,color:red,fillColor:#f03,fillOpacity:0.2
 ```
 
 and then process it:
@@ -99,24 +99,18 @@ $ rpgmap -c ex > rpgmap.out.js
 $ cat rpgmap.out.js
 var layerControl = L.control.layers().addTo(map)
 var placesIcon = L.icon({ iconUrl: 'icons/places.png', iconSize: [50.000000,50.000000], iconAnchor: [25.000000,25.000000] });
-var dangers = L.layerGroup([
-	L.circle([-38.856820,-24.982910],{color: 'red',fillColor: '#f03',radius: 2250000.000000,fillOpacity: 0.200000}).bindPopup("Whirlpool")])
-layerControl.addOverlay(dangers, "Dangers");
-var nature = L.layerGroup([
-	L.circle([-38.856820,-24.982910],{color: 'red',fillColor: '#f03',radius: 2250000.000000,fillOpacity: 0.200000}).bindPopup("Whirlpool")])
-layerControl.addOverlay(nature, "Nature");
+var naturaldangers = L.layerGroup([
+	L.circle([-38.856820,-24.982910],{radius: 2250000.000000,color: 'blue',fillColor: '#30f',fillOpacity: 0.200000}).bindPopup("Whirlpool")])
+layerControl.addOverlay(naturaldangers, "Natural Dangers");
 var places = L.layerGroup([
 	L.marker([39.027719,52.382813],{icon: placesIcon}).bindPopup("That Place")])
 layerControl.addOverlay(places, "Places");
 var regions = L.layerGroup([
 	L.polygon([[15.453680,3.339844],[27.722436,29.003906],[38.410558,42.187500],[36.491973,55.063477],[31.728167,58.315430],[30.826781,63.588867],[14.689881,82.045898],[13.795406,91.625977],[3.908099,95.317383],[3.294082,104.589844],[-6.882800,103.447266],[-14.859850,106.391602],[-24.806681,107.841797],[-33.687782,89.692383],[-33.100745,71.411133],[-5.790897,22.324219],[-6.489983,4.130859]],{color: 'red',fillColor: '#f03',fillOpacity: 0.200000}).bindPopup("That Region")])
+layerControl.addOverlay(regions, "Regions");
 ```
 
 You get a valid [leaflet](https://leafletjs.com/) JS file to reference, that autobuilds the stanzas necessary for layers, icons, etc.
 
-## Thoughts/TODOish
-
-### Styles
-Styles are hardcoded, although the underlying types have it abstracted for futureproofing. ~~PointMarkers could use icons~~, poly and circles should allow custom colors and opacity.
-
-~~Should that be per tag? If so, what if there are multiple tags with conflicting styles?~~ First tag wins (e.g. primary vs secondaries)? Even that could be nightmarish with poly's/circles as the stacking opacity would be obscuring, I believe (CONFIRMED).
+## Styles/Options
+Markers can have options embedded in the tag lines. If a tag has a colon (:) it is assumed to be an option, and parsed accordingly. Options with values of `int`, `float64`, `bool`, and `string` are probably parsed properly. Other types can be trivially supported. Options should **have no spaces other than intended spaces**.
