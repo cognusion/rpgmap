@@ -170,6 +170,6 @@ func die(e error) {
 }
 
 func dief(format string, a ...any) {
-	fmt.Printf(format, a...)
+	fmt.Fprintf(os.Stderr, format, a...)
 	os.Exit(1)
 }
