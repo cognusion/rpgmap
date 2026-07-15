@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"slices"
@@ -37,6 +38,52 @@ func main() {
 		litLines     = make([]string, 0)
 		lineCount    int64
 	)
+
+	// PREPROCESS for icons
+	for scanner.Scan() {
+		// We always trim starting and ending whitespace
+		line = strings.TrimSpace(scanner.Text())
+		lineCount++
+
+		// Skip empty lines
+		if line == "" {
+			continue
+		}
+		// Skip comments
+		if strings.HasPrefix(line, "//") || strings.HasPrefix(line, "#") {
+			continue
+		} else if strings.HasPrefix(line, "/*") {
+			commentBlock = true
+			continue
+		} else if strings.HasPrefix(line, "*/") {
+			commentBlock = false
+			continue
+		}
+		if commentBlock {
+			continue
+		}
+
+		if strings.HasPrefix(line, "i") {
+			// icon!!
+			i, ie := rpgmap.NewIcon(line)
+			if ie != nil {
+				dief("preprocess error on line %d: %v\n", lineCount, ie)
+			}
+			icons[i.Tag] = *i
+		}
+	}
+	if err = scanner.Err(); err != nil {
+		die(err)
+	}
+
+	// Reset the file to process again
+	if _, err = f.Seek(0, io.SeekStart); err != nil {
+		die(err)
+	}
+	lineCount = 0 // reset
+	scanner = bufio.NewScanner(f)
+
+	// second pass for effect
 	for scanner.Scan() {
 		// We always trim starting and ending whitespace
 		line = strings.TrimSpace(scanner.Text())
@@ -62,8 +109,8 @@ func main() {
 
 		// Process it!
 		var (
-			m   rpgmap.TagStringer
-			err error
+			m      rpgmap.TagStringer
+			newErr error
 		)
 
 		// Build based on the line type
@@ -82,51 +129,49 @@ func main() {
 			continue // we're done with this line
 
 		} else if strings.HasPrefix(line, "i") {
-			// icon!!
-			i, ie := rpgmap.NewIcon(line)
-			if ie != nil {
-				dief("error on line %d: %v\n", lineCount, ie)
-			}
-			icons[i.Tag] = *i
-			continue // we don't want to continue on
+			// icon, which we preprocessed. Skip!
+			continue
 
 		} else if strings.HasPrefix(line, "c") {
 			// circle
-			m, err = rpgmap.NewCircleMarker(line)
+			m, newErr = rpgmap.NewCircleMarker(line)
 
 		} else if strings.HasPrefix(line, "p") {
 			// Polygon
-			m, err = rpgmap.NewPolyMarker(line)
+			m, newErr = rpgmap.NewPolyMarker(line)
 
 		} else {
 			// Point
-			m, err = rpgmap.NewPointMarker(line, icons)
+			m, newErr = rpgmap.NewPointMarker(line, icons)
 
 		}
 
 		// Handle err
-		if err != nil {
-			dief("error on line %d: %v\n", lineCount, err)
+		if newErr != nil {
+			dief("error on line %d: %v\n", lineCount, newErr)
 		}
 
 		// Hook it into the tag map
 		tags = addLineToTags(tags, m.String(), m.Tags())
 
 	}
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		die(err)
 	}
 
 	// Dump
-	fmt.Printf("var layerControl = L.control.layers().addTo(map)\n")
+	fmt.Printf("var layerControl = L.control.layers().addTo(map)\n\n")
 
 	for _, altmap := range altMaps {
 		fmt.Printf("%s\n", altmap.String())
 	}
 
-	for tag, icon := range icons {
+	sortedIcons := slices.Sorted(maps.Keys(icons))
+	for _, tag := range sortedIcons {
+		icon := icons[tag]
 		fmt.Printf("var %sIcon = %s;\n", tag, icon.String())
 	}
+	fmt.Println()
 
 	sortedTags := slices.Sorted(maps.Keys(tags))
 	for _, t := range sortedTags {
@@ -140,7 +185,7 @@ func main() {
 			}
 		}
 		fmt.Println("])")
-		fmt.Printf("layerControl.addOverlay(%s, \"%s\");\n", tag, title(t))
+		fmt.Printf("layerControl.addOverlay(%s, \"%s\");\n\n", tag, title(t))
 	}
 
 	fmt.Println()
