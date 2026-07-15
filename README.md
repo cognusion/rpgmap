@@ -3,11 +3,14 @@
 CLI tool to generate [leaflet](https://leafletjs.com/) markers, polygons, and circles; With tag-based layerGroups for autotoggles, and tag-based custom icons.
 
 ```bash
+$ cd tool/
+$ go build -o rpgmap
+$ ./rpgmap -h
 Usage of ./rpgmap:
   -c, --config string   Config file to read
 ```
 
-The output of `rpgmap` is a valid JS file for use with a predefined map var named `map`. 
+The output of `tool/rpgmap` is a valid JS file for use with a predefined map var named `map`. 
 
 Below is a terse, non-working snippet to demonstrate. (The header `link` and `script` need to be corrected. `var imageUrl` needs to point to a valid image for the map, the `bounds` need to be correct, etc. etc.)
 
@@ -74,6 +77,9 @@ Circle markers match the format below. `x` and `y` must be numeric and reflect t
 Lines that start with `#` or `//` are ignored.
 Lines that start with `/*` start a comment block, and all lines are ignored until *after* a line starts with `*/`
 
+## Literal Lines
+Lines that start with `!` are literally printed in the order they occur, at the end of the output.
+
 ## Example
 
 If you put the configuration stanzas below into a file called `ex`
@@ -90,6 +96,9 @@ i,places,icons/places.png,50,50,25,25
 
 // Polygon!
 p,15.45368, 3.339844,27.722436, 29.003906,38.410558, 42.1875,36.491973, 55.063477,31.728167, 58.31543,30.826781, 63.588867,14.689881, 82.045898,13.795406, 91.625977,3.908099, 95.317383,3.294082, 104.589844,-6.8828, 103.447266,-14.85985, 106.391602,-24.806681, 107.841797,-33.687782, 89.692383,-33.100745, 71.411133,-5.790897, 22.324219,-6.489983, 4.130859,That Region,regions,color:red,fillColor:#f03,fillOpacity:0.2
+
+// Literal!
+!map.addLayer(places); // enables the places layer automatically.
 ```
 
 and then process it:
@@ -108,6 +117,8 @@ layerControl.addOverlay(places, "Places");
 var regions = L.layerGroup([
 	L.polygon([[15.453680,3.339844],[27.722436,29.003906],[38.410558,42.187500],[36.491973,55.063477],[31.728167,58.315430],[30.826781,63.588867],[14.689881,82.045898],[13.795406,91.625977],[3.908099,95.317383],[3.294082,104.589844],[-6.882800,103.447266],[-14.859850,106.391602],[-24.806681,107.841797],[-33.687782,89.692383],[-33.100745,71.411133],[-5.790897,22.324219],[-6.489983,4.130859]],{color: 'red',fillColor: '#f03',fillOpacity: 0.200000}).bindPopup("That Region")])
 layerControl.addOverlay(regions, "Regions");
+
+map.addLayer(places); // enables the places layer automatically.
 ```
 
 You get a valid [leaflet](https://leafletjs.com/) JS file to reference, that autobuilds the stanzas necessary for layers, icons, etc.

@@ -34,10 +34,13 @@ func main() {
 		line         string
 		commentBlock bool
 		altMaps      = make([]rpgmap.Map, 0)
+		litLines     = make([]string, 0)
+		lineCount    int64
 	)
 	for scanner.Scan() {
 		// We always trim starting and ending whitespace
 		line = strings.TrimSpace(scanner.Text())
+		lineCount++
 
 		// Skip empty lines
 		if line == "" {
@@ -64,11 +67,16 @@ func main() {
 		)
 
 		// Build based on the line type
-		if strings.HasPrefix(line, "a") {
+		if l, cut := strings.CutPrefix(line, "!"); cut {
+			// Literal line
+			litLines = append(litLines, l)
+			continue // we're done with this line
+
+		} else if strings.HasPrefix(line, "a") {
 			// Altmap!
 			a, ae := rpgmap.NewMap(line)
 			if ae != nil {
-				die(ae)
+				dief("error on line %d: %v\n", lineCount, ae)
 			}
 			altMaps = append(altMaps, *a)
 			continue // we're done with this line
@@ -77,7 +85,7 @@ func main() {
 			// icon!!
 			i, ie := rpgmap.NewIcon(line)
 			if ie != nil {
-				die(ie)
+				dief("error on line %d: %v\n", lineCount, ie)
 			}
 			icons[i.Tag] = *i
 			continue // we don't want to continue on
@@ -98,7 +106,7 @@ func main() {
 
 		// Handle err
 		if err != nil {
-			die(err)
+			dief("error on line %d: %v\n", lineCount, err)
 		}
 
 		// Hook it into the tag map
@@ -133,6 +141,11 @@ func main() {
 		}
 		fmt.Println("])")
 		fmt.Printf("layerControl.addOverlay(%s, \"%s\");\n", tag, title(t))
+	}
+
+	fmt.Println()
+	for _, l := range litLines {
+		fmt.Println(l)
 	}
 }
 
