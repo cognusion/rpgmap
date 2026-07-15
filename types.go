@@ -3,6 +3,7 @@ package rpgmap
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -227,7 +228,12 @@ func NewCircleMarker(line string) (*CircleMarker, error) {
 		return nil, fmt.Errorf("number of parts must be at least 6")
 	}
 	m.Point = Point{cast.ToFloat64(strings.TrimSpace(parts[1])), cast.ToFloat64(strings.TrimSpace(parts[2]))}
-	m.Radius = cast.ToFloat64(parts[3])
+	if f, err := strconv.ParseFloat(parts[3], 64); err == nil {
+		m.Radius = f
+	} else {
+		// error
+		return nil, fmt.Errorf("radius value of %s not valid radius", parts[3])
+	}
 	m.Text = strings.TrimSpace(parts[4])
 	m.Options.Add(Opt{"radius", m.Radius})
 
