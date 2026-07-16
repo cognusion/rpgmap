@@ -119,6 +119,15 @@ func main() {
 			litLines = append(litLines, l)
 			continue // we're done with this line
 
+		} else if strings.HasPrefix(line, "l") {
+			// Line!
+
+			// Lines are polymarkers with a var set that changes the stringer.
+			m, newErr = rpgmap.NewPolyMarker(line)
+			if m.(*rpgmap.PolyMarker) != nil {
+				m.(*rpgmap.PolyMarker).Line = true
+			}
+
 		} else if strings.HasPrefix(line, "a") {
 			// Altmap!
 			a, ae := rpgmap.NewMap(line)

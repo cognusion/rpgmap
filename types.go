@@ -110,12 +110,20 @@ func (m PointMarker) String() string {
 // PolyMarker is a Marker referred to by a list of Point creating a polygon.
 type PolyMarker struct {
 	Points []Point
+	Line   bool
 	Marker
 }
 
 func (m PolyMarker) String() string {
 	var mLine strings.Builder
-	mLine.WriteString("L.polygon([")
+	if m.Line {
+		// Line!
+		mLine.WriteString("L.polyline([")
+	} else {
+		// Polygon!
+		mLine.WriteString("L.polygon([")
+	}
+
 	for i, p := range m.Points {
 		mLine.WriteString(p.String())
 		if i+1 < len(m.Points) {

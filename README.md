@@ -68,6 +68,11 @@ Polygon markers match the format below. `x` and `y` must be numeric, and must be
 
 `p,x,y,x,y,x,y,x,y,Text Comment,tag1[,tag2[,...]]]`
 
+## Line Markers
+Line markers match the format below. `x` and `y` must be numeric, and must be sequential tuples. The last tuple will automatically close to the first tuple. Tags should contain no punctuation. Tags containing a colon (:) are assumed to be options.
+
+`l,x,y,x,y,x,y,x,y,Text Comment,tag1[,tag2[,...]]]`
+
 ## Circle Markers
 Circle markers match the format below. `x` and `y` must be numeric and reflect the center of the circle. 'radius' must be numeric. Tags should contain no punctuation. Tags containing a colon (:) are assumed to be options.
 
