@@ -46,6 +46,19 @@ You can use tiles, projections, whatever.
 </body>
 </html>
 ```
+## Macros
+Macro definition lines are pre-processed and match the format below. Any line may contain (but not start with!) the macro, and it will be replaced with the macro value at process-time.
+
+`%%MACRONAME,value,to,replace`
+
+Example:
+
+```
+%%THICKRED,color:#f03,weight:6
+...
+l,0,0,1,1,2,2,3,3,A line!,%%THICKRED,tag
+```
+
 ## Maps
 Tile layers match the format below, and are added to the layerControl above the marker layers. Only one Map can be visible at a time, unless opacity settings or transparent tile backgrounds fake it otherwise. Options should generally match those in the basemap.
 
@@ -90,8 +103,12 @@ Lines that start with `!` are literally printed in the order they occur, at the 
 If you put the configuration stanzas below into a file called `ex`
 
 ```
+/ Macro
+%%RED,color:red,fillColor:#f03,fillOpacity:0.2
+%%BLUE,color:blue,fillColor:#30f,fillOpacity:0.2
+
 // Circle!
-c,-38.85682, -24.98291,2250000,Whirlpool,natural dangers,color:blue,fillColor:#30f,fillOpacity:0.2
+c,-38.85682, -24.98291,2250000,Whirlpool,natural dangers,%%BLUE
 
 // icon!
 i,places,icons/places.png,50,50,25,25
@@ -100,9 +117,8 @@ i,places,icons/places.png,50,50,25,25
 39.027719, 52.382813,That Place,places
 
 // Polygon!
-p,15.45368, 3.339844,27.722436, 29.003906,38.410558, 42.1875,36.491973, 55.063477,31.728167, 58.31543,30.826781, 63.588867,14.689881, 82.045898,13.795406, 91.625977,3.908099, 95.317383,3.294082, 104.589844,-6.8828, 103.447266,-14.85985, 106.391602,-24.806681, 107.841797,-33.687782, 89.692383,-33.100745, 71.411133,-5.790897, 22.324219,-6.489983, 4.130859,That Region,regions,color:red,fillColor:#f03,fillOpacity:0.2
+p,15.45368, 3.339844,27.722436, 29.003906,38.410558, 42.1875,36.491973, 55.063477,31.728167, 58.31543,30.826781, 63.588867,14.689881, 82.045898,13.795406, 91.625977,3.908099, 95.317383,3.294082, 104.589844,-6.8828, 103.447266,-14.85985, 106.391602,-24.806681, 107.841797,-33.687782, 89.692383,-33.100745, 71.411133,-5.790897, 22.324219,-6.489983, 4.130859,That Region,regions,%%RED
 
-// Literal!
 !map.addLayer(places); // enables the places layer automatically.
 ```
 
@@ -112,16 +128,21 @@ and then process it:
 $ rpgmap -c ex > rpgmap.out.js
 $ cat rpgmap.out.js
 var layerControl = L.control.layers().addTo(map)
+
 var placesIcon = L.icon({ iconUrl: 'icons/places.png', iconSize: [50.000000,50.000000], iconAnchor: [25.000000,25.000000] });
+
 var naturaldangers = L.layerGroup([
 	L.circle([-38.856820,-24.982910],{radius: 2250000.000000,color: 'blue',fillColor: '#30f',fillOpacity: 0.200000}).bindPopup("Whirlpool")])
 layerControl.addOverlay(naturaldangers, "Natural Dangers");
+
 var places = L.layerGroup([
 	L.marker([39.027719,52.382813],{icon: placesIcon}).bindPopup("That Place")])
 layerControl.addOverlay(places, "Places");
+
 var regions = L.layerGroup([
 	L.polygon([[15.453680,3.339844],[27.722436,29.003906],[38.410558,42.187500],[36.491973,55.063477],[31.728167,58.315430],[30.826781,63.588867],[14.689881,82.045898],[13.795406,91.625977],[3.908099,95.317383],[3.294082,104.589844],[-6.882800,103.447266],[-14.859850,106.391602],[-24.806681,107.841797],[-33.687782,89.692383],[-33.100745,71.411133],[-5.790897,22.324219],[-6.489983,4.130859]],{color: 'red',fillColor: '#f03',fillOpacity: 0.200000}).bindPopup("That Region")])
 layerControl.addOverlay(regions, "Regions");
+
 
 map.addLayer(places); // enables the places layer automatically.
 ```
