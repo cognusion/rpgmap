@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/cognusion/go-dictionary"
 	"github.com/cognusion/rpgmap"
 	"github.com/spf13/pflag"
 	"golang.org/x/text/cases"
@@ -19,6 +20,7 @@ func main() {
 
 	var (
 		conf = pflag.StringP("config", "c", "", "Config file to read")
+		dict = dictionary.SyncDict{}
 	)
 	pflag.Parse()
 
@@ -28,7 +30,6 @@ func main() {
 	}
 	defer f.Close()
 
-	scanner := bufio.NewScanner(f)
 	var (
 		tags         = make(map[string][]string)
 		icons        = make(map[string]rpgmap.Icon)
@@ -39,49 +40,15 @@ func main() {
 		lineCount    int64
 	)
 
-	// PREPROCESS for icons
-	for scanner.Scan() {
-		// We always trim starting and ending whitespace
-		line = strings.TrimSpace(scanner.Text())
-		lineCount++
-
-		// Skip empty lines
-		if line == "" {
-			continue
-		}
-		// Skip comments
-		if strings.HasPrefix(line, "//") || strings.HasPrefix(line, "#") {
-			continue
-		} else if strings.HasPrefix(line, "/*") {
-			commentBlock = true
-			continue
-		} else if strings.HasPrefix(line, "*/") {
-			commentBlock = false
-			continue
-		}
-		if commentBlock {
-			continue
-		}
-
-		if strings.HasPrefix(line, "i") {
-			// icon!!
-			i, ie := rpgmap.NewIcon(line)
-			if ie != nil {
-				dief("preprocess error on line %d: %v\n", lineCount, ie)
-			}
-			icons[i.Tag] = *i
-		}
-	}
-	if err = scanner.Err(); err != nil {
-		die(err)
-	}
+	// Preprocess icons and macros
+	preprocess(f, &dict, icons)
 
 	// Reset the file to process again
 	if _, err = f.Seek(0, io.SeekStart); err != nil {
 		die(err)
 	}
 	lineCount = 0 // reset
-	scanner = bufio.NewScanner(f)
+	scanner := bufio.NewScanner(f)
 
 	// second pass for effect
 	for scanner.Scan() {
@@ -106,12 +73,19 @@ func main() {
 		if commentBlock {
 			continue
 		}
+		// Skip macro definitions
+		if strings.HasPrefix(line, "%%") {
+			continue
+		}
 
 		// Process it!
 		var (
 			m      rpgmap.TagStringer
 			newErr error
 		)
+
+		// Macro replacement
+		line = dict.Replacer(line)
 
 		// Build based on the line type
 		if l, cut := strings.CutPrefix(line, "!"); cut {
@@ -201,6 +175,72 @@ func main() {
 	for _, l := range litLines {
 		fmt.Println(l)
 	}
+}
+
+// preprocess takes a pass over the file, adding macro definitions to the dictionary,
+// and deferring icon processing until it is complete.
+func preprocess(r io.Reader, dict *dictionary.SyncDict, iconmap map[string]rpgmap.Icon) {
+	defer dict.Resolve() // Make sure any embedded macros are resolved
+
+	scanner := bufio.NewScanner(r)
+
+	// PREPROCESS for macros and icons
+	var (
+		line         string
+		lineCount    int64
+		commentBlock bool
+		err          error
+	)
+	for scanner.Scan() {
+		// We always trim starting and ending whitespace
+		line = strings.TrimSpace(scanner.Text())
+		lineCount++
+
+		// Skip empty lines
+		if line == "" {
+			continue
+		}
+		// Skip comments
+		if strings.HasPrefix(line, "//") || strings.HasPrefix(line, "#") {
+			continue
+		} else if strings.HasPrefix(line, "/*") {
+			commentBlock = true
+			continue
+		} else if strings.HasPrefix(line, "*/") {
+			commentBlock = false
+			continue
+		}
+		if commentBlock {
+			continue
+		}
+
+		if strings.HasPrefix(line, "i") {
+			// icon!!
+			defer iconProcessor(line, lineCount, dict, iconmap)
+		} else if cline, cut := strings.CutPrefix(line, "%%"); cut {
+			// Macro!!
+			parts := strings.SplitN(cline, ",", 2)
+			if len(parts) < 2 {
+				dief("macro poorly defined on line %d\n", lineCount)
+			}
+			dict.AddValues(map[string]string{parts[0]: parts[1]})
+		}
+	}
+	if err = scanner.Err(); err != nil {
+		die(err)
+	}
+}
+
+// iconProcessor is trivial func so we can defer the pre-processing of icons until after the dictionary is populated.
+func iconProcessor(line string, lineCount int64, dict *dictionary.SyncDict, iconmap map[string]rpgmap.Icon) {
+	// macro replacement
+	line = dict.Replacer(line)
+
+	i, ie := rpgmap.NewIcon(line)
+	if ie != nil {
+		dief("preprocess error on line %d: %v\n", lineCount, ie)
+	}
+	iconmap[i.Tag] = *i
 }
 
 // addLineToTags iterates over the tags, and adds the line to each valid entry in the tagMap

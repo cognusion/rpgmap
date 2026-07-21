@@ -8,3 +8,5 @@ require (
 )
 
 require golang.org/x/text v0.40.0
+
+require github.com/cognusion/go-dictionary v1.0.1
